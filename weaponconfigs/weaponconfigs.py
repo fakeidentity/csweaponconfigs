@@ -18,9 +18,10 @@ import click
 from click import echo, secho, confirm
 import autoit
 import appdirs
+from colorama import Fore, Style
 
 from log import logger_setup, handle_exception
-from __init__ import appname
+from __init__ import appname, __version__, appurl
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = current_dir
@@ -29,7 +30,7 @@ log = logger_setup(log_dir, __file__)
 uncaught_exception_handler = partial(handle_exception, log)
 sys.excepthook = uncaught_exception_handler
 
-log.debug("Start.")
+log.info(f"{appname} - version {__version__}")
 
 from utils import (active_window_title, list_open_windows, used_binds,
                    unused_binds, cs_bind_autoit_map, cs_cfg_dir, our_cfg_fp,
@@ -60,8 +61,9 @@ def render_from_file(tpl_path, *args, **kwargs):
 
 
 class GSIPayloadHandler(object):
-    # TODO update this 'id_line' with a url or something
-    id_line = "// created by Individual Weapon Configs"
+    id_line = f"// created by {appname}"
+    if appurl:
+        id_line += f" ({appurl})"
 
     def __init__(self):
         self.last_wep_name = ""
@@ -79,10 +81,13 @@ class GSIPayloadHandler(object):
             return
         activity = data.get("player", {}).get("activity", "") # "player_id" 0 in gamestate_integration cfg
         if not activity:
-            log.error(
+            log.warn(
+                Fore.RED +
                 "No 'activity' data. Check \"player_id\" is \"1\" "
                 "in gamestate_integration_weaponconfigs.cfg.\n"
-                "We need 'activity' to determine if console is open or not.")
+                "We need 'activity' to determine if console is open or not." +
+                Fore.RESET
+            )
         elif activity == "menu": # no weapons in menu
             log.info("In menu.") # ok as INFO thanks to dupe log filter
             return
@@ -211,7 +216,7 @@ class GSIPayloadHandler(object):
                     write_cfg()
                 else:
                     # Not our file!? Bizarre.
-                    log.error("Existing CFG file doesn't seem to be ours. "
+                    log.warn("Existing CFG file doesn't seem to be ours. "
                               "Not going to touch it.")
                     secho(f"Check {our_cfg_fp}. "
                           "You either need to delete or rename it.", fg="red")
@@ -308,7 +313,9 @@ def ensure_bind_bound():
                                   "but that won't work because "
                                   f"cs_bind is set to {configkey}")
                     else:
-                        log.debug(f"{autoexecfn} already contains '{fullbind}'")
+                        log.info(Fore.GREEN + \
+                                 f"{autoexecfn} already contains '{fullbind}'" \
+                                 + Fore.RESET)
                         foundbind = True
     except FileNotFoundError:
         log.debug(f"Can't find bind in autoexec because {autoexecfn} "
@@ -320,7 +327,7 @@ def ensure_bind_bound():
 
 def gen_GSI_cfg():
     # don't need to use jinja2 for this but may as well.
-    s = render_from_file(gsi_cfg_template_fp, port=port)
+    s = render_from_file(gsi_cfg_template_fp, port=port, appname=appname)
     log.debug("GSI CFG:\n" + s)
     return s
 
@@ -378,10 +385,18 @@ def before_first_req():
 
 
 def main(debug=False):
-    if debug:
-        for loghandler in log.handlers:
-            if isinstance(loghandler, logging.StreamHandler):
-                loghandler.setLevel(logging.DEBUG)
+    for loghandler in log.handlers:
+        if isinstance(loghandler, logging.handlers.MemoryHandler):
+            conhandler = loghandler.target
+            if debug:
+                # set flushlevel so debugs are handled when we flush in a sec
+                loghandler.flushLevel = logging.DEBUG
+            else:
+                conhandler.setLevel(logging.INFO)
+            loghandler.flush()
+            # we could remove memhandler and add conhandler here BUT then
+            # conhandler wouldn't be last, and strip ansi formatter doesn't work
+            loghandler.capacity = 1
 
     make_gsi_cfg()
 
@@ -394,8 +409,8 @@ def main(debug=False):
     server = Thread(target=lambda: fapp.run(port=port))
     server.start()
 
-    log.info("Game state integration endpoint server is running.")
-    log.debug(f"Running on http://127.0.0.1:{port}")
+    secho("Ready.", fg="green")
+    log.debug(f"GSI endpoint server is running on http://127.0.0.1:{port}")
 
 
 @click.command()

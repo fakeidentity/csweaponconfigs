@@ -1,4 +1,4 @@
-"Individual Weapon Configs"
+"{{appname}}"
 {
  "uri" "http://127.0.0.1:{{port}}"
  "timeout" "5.0"
