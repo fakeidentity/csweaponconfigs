@@ -2,7 +2,7 @@
 
 import sys
 from threading import Thread
-from functools import partial
+from functools import partial, lru_cache
 import json
 import os
 from textwrap import dedent
@@ -162,6 +162,7 @@ class GSIPayloadHandler(object):
             self.setxhair_queued = True
 
 
+    @lru_cache()
     def gen_cfg(self):
         template = Template(dedent("""
             // This file is overwritten every time you change weapon. Don't bother editing it.
@@ -388,6 +389,7 @@ def GSI_post():
     return http_code(HTTPStatus.OK)
 
 
+@lru_cache()
 def http_code(status):
     assert type(status) == type(HTTPStatus.OK)
     return (status.phrase, status.value)
@@ -431,14 +433,30 @@ def main(debug=False):
 @click.command()
 @click.option("--debug", is_flag=True,
               help=("Show debug messages"))
-def cli(debug):
+@click.option("--profile", is_flag=True,
+              help=("Profile code. You don't want this."))
+def cli(debug, profile):
     """
     Automatically execute different CSGO cfg files depending on
     what weapon you have out.
     \n
     Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
     """
-    main(debug)
+    if not profile:
+        main(debug)
+    else:
+        import cProfile, pstats
+
+        profiler = cProfile.Profile()
+        profiler.runcall(main, debug)
+
+        stats = pstats.Stats(profiler)
+        stats.strip_dirs()
+        stats.sort_stats('cumulative', 'calls')
+        stats.print_stats(20)
+        stats.sort_stats('time', 'calls')
+        stats.print_stats(10)
+
 
 
 if __name__ == "__main__":

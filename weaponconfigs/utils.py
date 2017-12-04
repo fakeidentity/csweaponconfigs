@@ -57,10 +57,11 @@ def bind_data():
     userdata_cfgs = glob.glob(os.path.expandvars(userdata_glob))
     from collections import defaultdict
     binds = defaultdict(list)
+    bindpattern = re.compile(r"bind \"(.+?)\" \"(.+?)\"")
     for fp in userdata_cfgs:
         with open(fp, "r") as f:
             for line in f:
-                match = re.match(r"bind \"(.+?)\" \"(.+?)\"", line)
+                match = bindpattern.match(line)
                 if match:
                     keyname = match.group(1).upper()
                     bindval = match.group(2)
