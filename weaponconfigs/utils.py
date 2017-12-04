@@ -1,4 +1,3 @@
-import sys
 import os
 import glob
 import re
@@ -13,7 +12,7 @@ from log import getLogger, modulename
 log = getLogger(modulename())
 
 steam_dir = os.path.expandvars(r"%PROGRAMFILES(x86)%\Steam")
-cs_cfg_dir = os.path.join(steam_dir, "steamapps\common\Counter-Strike Global Offensive\csgo\cfg")
+cs_cfg_dir = os.path.join(steam_dir, r"steamapps\common\Counter-Strike Global Offensive\csgo\cfg")
 our_cfg_fn = "weapon_configs.cfg"
 our_cfg_fp = os.path.join(cs_cfg_dir, our_cfg_fn)
 execsnippet = "exec {}".format(our_cfg_fn.rpartition(".")[0])
@@ -95,8 +94,6 @@ def localconfig_fp():
 
 
 def localconfig_data():
-    localconfigs = glob.glob(os.path.expandvars(localconfig_glob))
-    launchparams = []
     with open(localconfig_fp(), "r", encoding="utf8") as f:
         return vdf.load(f)
 
@@ -182,6 +179,3 @@ def add_to_autoexec(s, autoexecfp=None):
                          rf'{s}\n\n\1',
                          line),
                   end="")
-
-
-import config # TODO resolve this circular import some other way

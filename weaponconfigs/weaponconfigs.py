@@ -15,10 +15,10 @@ from flask import Flask, request
 import jinja2
 from jinja2 import Template
 import click
-from click import echo, secho, confirm
+from click import echo, secho, confirm, pause
 import autoit
 import appdirs
-from colorama import Fore, Style
+from colorama import Fore
 
 from log import logger_setup, handle_exception
 from __init__ import appname, __version__, appurl
@@ -32,10 +32,10 @@ sys.excepthook = uncaught_exception_handler
 
 log.info(f"{appname} - version {__version__}")
 
-from utils import (active_window_title, list_open_windows, used_binds,
-                   unused_binds, cs_bind_autoit_map, cs_cfg_dir, our_cfg_fp,
-                   execsnippet, existing_binds, prettylist, launch_options,
-                   autoexec_filename, steam_dir, set_launch_options)
+from utils import (active_window_title, list_open_windows, cs_bind_autoit_map,
+                   cs_cfg_dir, our_cfg_fp, execsnippet, existing_binds,
+                   prettylist, launch_options,autoexec_filename, steam_dir,
+                   set_launch_options, add_to_autoexec)
 import config
 port = config.data["gsi_port"]
 cs_bind = config.data["cs_bind"]
@@ -81,7 +81,7 @@ class GSIPayloadHandler(object):
             return
         activity = data.get("player", {}).get("activity", "") # "player_id" 0 in gamestate_integration cfg
         if not activity:
-            log.warn(
+            log.warning(
                 Fore.RED +
                 "No 'activity' data. Check \"player_id\" is \"1\" "
                 "in gamestate_integration_weaponconfigs.cfg.\n"
@@ -216,12 +216,17 @@ class GSIPayloadHandler(object):
                     write_cfg()
                 else:
                     # Not our file!? Bizarre.
-                    log.warn("Existing CFG file doesn't seem to be ours. "
-                              "Not going to touch it.")
+                    log.warning("Existing CFG file doesn't seem to be ours. "
+                                "Not going to touch it.")
                     secho(f"Check {our_cfg_fp}. "
                           "You either need to delete or rename it.", fg="red")
                     sys.exit(1)
 
+
+def restart():
+    log.debug("Restarting script.")
+    call(sys.executable + " " + " ".join(sys.argv))
+    sys.exit(0)
 
 
 def ensure_bind_bound():
@@ -254,14 +259,19 @@ def ensure_bind_bound():
             if confirm(f"Change cs_bind to {existing_bind}?", default=True):
                 config.data["cs_bind"] = existing_bind
                 config.generate_config()
-                log.debug("Restarting script.")
-                call(sys.executable + " " + " ".join(sys.argv))
-                sys.exit(0)
+                restart()
     elif not _existing_binds:
         log.debug(f"Couldn't find {bindsnippet} in config.cfg")
 
     launchstr = launch_options()
     autoexecfn = autoexec_filename(launchstr)
+
+    # They could also add launch options and write an autoexec file
+    #  themselves - but that's a bit longwinded to explain?
+    failecho = lambda: secho(
+        f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
+        "...into your CSGO console.\n",
+        fg="red")
 
     if not autoexecfn:
         log.debug("Couldn't find any autoexec in launch options.")
@@ -270,14 +280,11 @@ def ensure_bind_bound():
             "options. Killing it will also close any games you have running.",
             fg="red")
         if not confirm("Kill Steam.exe? [y/n]", show_default=False):
-            log.debug("User decided not to kill Steam.")
-            # They could also add launch options and write an autoexec file
-            #  themselves - but that's a bit longwinded to explain?.
-            secho(
-                f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
-                "...into your CSGO console.\n",
-                fg="red")
-            sys.exit(1)
+            log.debug("User decided not to kill Steam to "
+                      "update launch options.")
+            failecho()
+            pause()
+            restart()
             return
 
         autoexecfn = "autoexec.cfg"
@@ -307,15 +314,22 @@ def ensure_bind_bound():
                 if match:
                     fullbind = match.group(1)
                     bindkey = match.group(2)
-                    bindval = match.group(3)
+                    #bindval = match.group(3)
                     if bindkey != configkey:
                         log.debug(f"Found '{fullbind}' in {autoexecfn} - "
                                   "but that won't work because "
                                   f"cs_bind is set to {configkey}")
                     else:
-                        log.info(Fore.GREEN + \
-                                 f"{autoexecfn} already contains '{fullbind}'" \
-                                 + Fore.RESET)
+                        log.debug(f"{autoexecfn} already contains '{fullbind}'")
+                        if game_name in list_open_windows():
+                            log.debug("Game is already open.")
+                            failecho()
+                            pause()
+                            restart()
+                        else:
+                            secho("The right bind is already in your autoexec! "
+                                  "Everything should work "
+                                  "when you open the game.", fg="green")
                         foundbind = True
     except FileNotFoundError:
         log.debug(f"Can't find bind in autoexec because {autoexecfn} "
@@ -348,8 +362,8 @@ def make_gsi_cfg():
         log.debug("GSI config doesn't exist.")
         write_GSI_cfg(gsi_cfg)
         if game_name in list_open_windows():
-            log.warn("CS is already running. It needs to be restarted "
-                     "for it to notice the gamestate integration cfg.")
+            log.warning("CS is already running. It needs to be restarted "
+                        "for it to notice the gamestate integration cfg.")
             secho("You need to restart CS for individual weapon configs "
                   "to work.", fg="red")
     else:
@@ -358,9 +372,9 @@ def make_gsi_cfg():
             log.debug("Existing GSI config is outdated. Overwriting it. "
                       f"({gsi_config_fp})")
             if game_name in list_open_windows():
-                log.warn("CS is already running. It needs to be restarted "
-                         "for changes to the gamestate integration cfg "
-                         "to take effect.")
+                log.warning("CS is already running. It needs to be restarted "
+                            "for changes to the gamestate integration cfg "
+                            "to take effect.")
                 secho("You need to restart CS for individual weapon configs "
                       "to work.", fg="red")
             write_GSI_cfg(gsi_cfg)
@@ -409,7 +423,8 @@ def main(debug=False):
     server = Thread(target=lambda: fapp.run(port=port))
     server.start()
 
-    secho("Ready.", fg="green")
+    termwidth, _ = click.get_terminal_size()
+    secho("Ready.".center(termwidth), fg="green")
     log.debug(f"GSI endpoint server is running on http://127.0.0.1:{port}")
 
 

@@ -1,5 +1,6 @@
+import sys
 from logging import (Formatter, getLogger, StreamHandler, Filter,
-                     INFO, DEBUG, WARN)
+                     INFO, DEBUG)
 from logging.handlers import RotatingFileHandler, MemoryHandler
 import os
 import inspect
@@ -14,7 +15,7 @@ def modulename():
     """
     modlist = [x for x in inspect.stack() if x[3] == "<module>"][::-1]
     modnames = []
-    for i, frame in enumerate(modlist):
+    for i, _ in enumerate(modlist):
         modname = inspect.getmodulename(modlist[i][1])
         if modname:
             modnames.append(modname)

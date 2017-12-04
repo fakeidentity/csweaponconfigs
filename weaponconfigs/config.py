@@ -3,11 +3,11 @@
 import os
 from configparser import SafeConfigParser, NoSectionError
 from random import choice
+from logging import getLogger
 
 import port_for
 import appdirs
 
-from logging import getLogger
 from log import modulename
 from utils import bind_data, unused_binds, our_cfg_fn
 from __init__ import appname
@@ -110,7 +110,7 @@ def write_cfg(config, config_fp=config_path):
     # save / write to file
     log.debug(f"Writing config file to {config_path}.")
     os.makedirs(config_dir, exist_ok=True)
-    with open(config_path, "w", encoding="utf-8") as f:
+    with open(config_fp, "w", encoding="utf-8") as f:
         config.write(f)
 
 
@@ -127,15 +127,15 @@ try:
         # take care of any idiots' problems before they start
         if val.startswith('"') and val.endswith('"') or \
            val.startswith("'") and val.endswith("'"):
-            log.warn("Some idiot put quotes around the value of "
+            log.warning("Some idiot put quotes around the value of "
                      f"{setting_name} in the config file. We'll fix it.")
             val = val[1:-1]
             _require_regen = True
 
         data[setting_name] = val
 except NoSectionError:
-    log.warn(f"No {appname} section in config. Maybe somebody fucked it up? "
-             "It'll fix itself.")
+    log.warning(f"No {appname} section in config. Maybe somebody fucked it up? "
+                "It'll fix itself.")
 
 _old_data = data.copy()
 
