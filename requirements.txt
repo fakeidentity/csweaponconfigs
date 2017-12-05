@@ -6,3 +6,5 @@ vdf>=2.3
 click>=6.7
 colorama>=0.3.9
 appdirs>=1.4.3
+infi.systray>=0.1.10
+win32console

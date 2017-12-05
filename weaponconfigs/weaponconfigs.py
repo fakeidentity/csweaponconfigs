@@ -19,6 +19,7 @@ from click import echo, secho, confirm, pause
 import autoit
 import appdirs
 from colorama import Fore
+from win32console import SetConsoleTitle
 
 from log import logger_setup, handle_exception
 from __init__ import appname, __version__, appurl
@@ -35,7 +36,7 @@ log.info(f"{appname} - version {__version__}")
 from utils import (active_window_title, list_open_windows, cs_bind_autoit_map,
                    cs_cfg_dir, our_cfg_fp, execsnippet, existing_binds,
                    prettylist, launch_options,autoexec_filename, steam_dir,
-                   set_launch_options, add_to_autoexec)
+                   set_launch_options, add_to_autoexec, tray_icon, convis)
 import config
 port = config.data["gsi_port"]
 cs_bind = config.data["cs_bind"]
@@ -64,6 +65,20 @@ class GSIPayloadHandler(object):
     id_line = f"// created by {appname}"
     if appurl:
         id_line += f" ({appurl})"
+
+    cfg_template = Template(dedent("""
+        // This file is overwritten every time you change weapon. Don't bother editing it.
+        {%- if wep_slot != last_wep_slot %}
+        exec {{wep_slot}} // weapon slot (slot1–slot10)
+        {%- endif %}
+        {%- if wep_type and wep_type != last_wep_type %}
+        exec {{wep_type}} // weapon type ("pistol", "rifle", "submachinegun", "sniperrifle", "machinegun", "shotgun", "c4", "knife", "grenade")
+        {%- endif %}
+        {%- if wep_type != wep_name %}
+        exec {{wep_name}} // weapon name (without "weapon_" prefix)
+        {%- endif %}
+        {{id_line}}
+        """).strip())
 
     def __init__(self):
         self.last_wep_name = ""
@@ -162,27 +177,13 @@ class GSIPayloadHandler(object):
             self.setxhair_queued = True
 
 
-    @lru_cache()
     def gen_cfg(self):
-        template = Template(dedent("""
-            // This file is overwritten every time you change weapon. Don't bother editing it.
-            {%- if wep_slot != last_wep_slot %}
-            exec {{wep_slot}} // weapon slot (slot1–slot10)
-            {%- endif %}
-            {%- if wep_type and wep_type != last_wep_type %}
-            exec {{wep_type}} // weapon type ("pistol", "rifle", "submachinegun", "sniperrifle", "machinegun", "shotgun", "c4", "knife", "grenade")
-            {%- endif %}
-            {%- if wep_type != wep_name %}
-            exec {{wep_name}} // weapon name (without "weapon_" prefix)
-            {%- endif %}
-            {{id_line}}
-            """).strip())
-        s = template.render(last_wep_slot = self.last_wep_slot,
-                            wep_slot = self.active_wep_slot,
-                            last_wep_type = self.last_wep_type,
-                            wep_type = self.active_wep_type,
-                            wep_name = self.active_wep_name,
-                            id_line = self.id_line)
+        s = self.cfg_template.render(last_wep_slot = self.last_wep_slot,
+                                     wep_slot = self.active_wep_slot,
+                                     last_wep_type = self.last_wep_type,
+                                     wep_type = self.active_wep_type,
+                                     wep_name = self.active_wep_name,
+                                     id_line = self.id_line)
         log.debug(s)
         return s
 
@@ -400,7 +401,18 @@ def before_first_req():
     log.debug("Recieved our first request")
 
 
-def main(debug=False):
+@click.command()
+@click.option("--debug", is_flag=True,
+              help=("Show debug messages"))
+def cli(debug):
+    """
+    Automatically execute different CSGO cfg files depending on
+    what weapon you have out.
+    \n
+    Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
+    """
+    SetConsoleTitle(appname)
+
     for loghandler in log.handlers:
         if isinstance(loghandler, logging.handlers.MemoryHandler):
             conhandler = loghandler.target
@@ -422,25 +434,20 @@ def main(debug=False):
     wlog = logging.getLogger("werkzeug")
     wlog.setLevel(logging.WARN)
 
-    server = Thread(target=lambda: fapp.run(port=port))
+    server = Thread(target=lambda: fapp.run(port=port), daemon=True)
     server.start()
 
     termwidth, _ = click.get_terminal_size()
     secho("Ready.".center(termwidth), fg="green")
     log.debug(f"GSI endpoint server is running on http://127.0.0.1:{port}")
 
-
-@click.command()
-@click.option("--debug", is_flag=True,
-              help=("Show debug messages"))
-def cli(debug):
-    """
-    Automatically execute different CSGO cfg files depending on
-    what weapon you have out.
-    \n
-    Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
-    """
-    main(debug)
+    systray = tray_icon()
+    try:
+        systray.start()
+        while systray._message_loop_thread.isAlive():
+            systray._message_loop_thread.join(1)
+    except KeyboardInterrupt:
+        systray.shutdown()
 
 
 if __name__ == "__main__":

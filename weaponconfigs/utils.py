@@ -1,13 +1,18 @@
 import os
+import sys
 import glob
 import re
 from fileinput import FileInput
 
 from win32gui import (GetWindowText, GetForegroundWindow, EnumWindows,
-                      IsWindowVisible)
+                      IsWindowVisible, ShowWindow)
 import vdf
+from infi.systray import SysTrayIcon
+from win32console import GetConsoleWindow
+import win32con
 
 from log import getLogger, modulename
+from __init__ import appname
 
 log = getLogger(modulename())
 
@@ -180,3 +185,32 @@ def add_to_autoexec(s, autoexecfp=None):
                          rf'{s}\n\n\1',
                          line),
                   end="")
+
+
+class ConsoleVisibility(object):
+    def __init__(self):
+        self.visible = True
+        self.win = GetConsoleWindow()
+
+
+    def toggle_hide(self, systray=None):
+        self.visible = not self.visible
+        ShowWindow(self.win, self.visible)
+
+
+    def hide(self):
+        ShowWindow(self.win, win32con.SW_HIDE)
+
+
+    def minimise(self):
+        ShowWindow(self.win, win32con.SW_MINIMIZE)
+
+
+
+convis = ConsoleVisibility()
+
+def tray_icon():
+    menu = (("Show/Hide", None, convis.toggle_hide),)
+    systray = SysTrayIcon("glockicon.ico", appname, menu, default_menu_index=0)
+    return systray
+
