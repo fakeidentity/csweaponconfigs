@@ -22,10 +22,8 @@ from colorama import Fore
 from win32console import SetConsoleTitle
 
 from log import logger_setup, handle_exception
-from __init__ import appname, __version__, appurl
+from __init__ import appname, __version__, appurl, data_dir
 
-current_dir = os.path.dirname(os.path.realpath(__file__))
-data_dir = current_dir
 log_dir = appdirs.user_log_dir(appname, False)
 log = logger_setup(log_dir, __file__)
 uncaught_exception_handler = partial(handle_exception, log)
@@ -69,22 +67,22 @@ class GSIPayloadHandler(object):
     cfg_template = Template(dedent("""
         // This file is overwritten every time you change weapon. Don't bother editing it.
         {%- if wep_slot != last_wep_slot %}
-        exec {{wep_slot}} // weapon slot (slot1–slot10)
         {%- if last_wep_slot %}
         exec undo_{{last_wep_slot}} // previous weapon slot
         {%- endif %}
+        exec {{wep_slot}} // weapon slot (slot1–slot10)
         {%- endif %}
         {%- if wep_type and wep_type != last_wep_type %}
-        exec {{wep_type}} // weapon type ("pistol", "rifle", "submachinegun", "sniperrifle", "machinegun", "shotgun", "c4", "knife", "grenade")
         {%- if last_wep_type %}
         exec undo_{{last_wep_type}} // previous weapon type
         {%- endif %}
-        {%- endif %}
-        {%- if wep_type != wep_name %}
-        exec {{wep_name}} // weapon name (without "weapon_" prefix)
+        exec {{wep_type}} // weapon type ("pistol", "rifle", "submachinegun", "sniperrifle", "machinegun", "shotgun", "c4", "knife", "grenade")
         {%- endif %}
         {%- if last_wep_name and wep_name != last_wep_name %}
         exec undo_{{last_wep_name}} // previous weapon name
+        {%- endif %}
+        {%- if wep_type != wep_name %}
+        exec {{wep_name}} // weapon name (without "weapon_" prefix)
         {%- endif %}
         {{id_line}}
         """).strip())

@@ -12,7 +12,7 @@ from win32console import GetConsoleWindow
 import win32con
 
 from log import getLogger, modulename
-from __init__ import appname
+from __init__ import appname, data_dir
 
 log = getLogger(modulename())
 
@@ -211,6 +211,7 @@ convis = ConsoleVisibility()
 
 def tray_icon():
     menu = (("Show/Hide", None, convis.toggle_hide),)
-    systray = SysTrayIcon("glockicon.ico", appname, menu, default_menu_index=0)
+    iconfp = os.path.join(data_dir, "icon.ico")
+    systray = SysTrayIcon(iconfp, appname, menu, default_menu_index=0)
     return systray
 
