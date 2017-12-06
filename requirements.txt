@@ -2,7 +2,6 @@ Flask>=0.12.2
 pyautoit>=0.4
 win32gui
 port-for>=0.4
-vdf>=2.3
 click>=6.7
 colorama>=0.3.9
 appdirs>=1.4.3

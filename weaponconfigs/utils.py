@@ -1,12 +1,10 @@
 import os
-import sys
 import glob
 import re
 from fileinput import FileInput
 
 from win32gui import (GetWindowText, GetForegroundWindow, EnumWindows,
                       IsWindowVisible, ShowWindow)
-import vdf
 from infi.systray import SysTrayIcon
 from win32console import GetConsoleWindow
 import win32con
@@ -70,10 +68,6 @@ def bind_data():
                 if match:
                     keyname = match.group(1).upper()
                     bindval = match.group(2)
-                    #if keyname in binds and binds[keyname][0] != bindval:
-                        #log.debug(f"{keyname} already in binds.")
-                        #log.debug(f"old: bind {keyname} \"{binds[keyname][0]}\"")
-                        #log.debug(f"new: bind {keyname} \"{bindval}\"")
                     if keyname in binds and binds[keyname][0] == bindval:
                         continue
                     binds[keyname].append(bindval)
@@ -90,45 +84,6 @@ def unused_binds(data=None):
     if not data:
         data = bind_data()
     return cs_bindnames.difference(used_binds(data))
-
-
-localconfig_glob = r"%PROGRAMFILES(x86)%\Steam\userdata\*\config\localconfig.vdf"
-
-def localconfig_fp():
-    localconfigs = glob.glob(os.path.expandvars(localconfig_glob))
-    return sorted(localconfigs, key=os.path.getmtime, reverse=True)[0]
-
-
-def localconfig_data():
-    with open(localconfig_fp(), "r", encoding="utf8") as f:
-        return vdf.load(f)
-
-
-def launch_options():
-    log.debug("Reading CSGO launch options.")
-    data = localconfig_data()
-    return data["UserLocalConfigStore"]["Software"]["Valve"] \
-                        ["Steam"]["Apps"]["730"]["LaunchOptions"]
-
-
-def set_launch_options(s):
-    data = localconfig_data()
-    data["UserLocalConfigStore"]["Software"]["Valve"] \
-        ["Steam"]["Apps"]["730"]["LaunchOptions"] = s
-    with open(localconfig_fp(), "w", encoding="utf8") as f:
-        vdf.dump(data, f, pretty=True)
-
-
-def autoexec_filename(launchstr=""):
-    log.debug("Determining autoexec filenames from CSGO launch options.")
-    if not launchstr:
-        launchstr = launch_options()
-    match = re.search(r"[+-]exec (\w+)(?:\.cfg)?", launchstr)
-    if match:
-        log.debug(f"Found '{match.group(0)}' in launch options.")
-        cfg = match.group(1)
-        cfg += ".cfg"
-        return cfg
 
 
 def existing_binds(binddata=None):
@@ -166,11 +121,9 @@ def prettylist(list_, conjunc, pre="'", post="'"):
     return s
 
 
-def add_to_autoexec(s, autoexecfp=None):
-    if not autoexecfp:
-        autoexecfp = os.path.join(cs_cfg_dir,
-                                  autoexec_filename() or "autoexec.cfg")
-    autoexecfn = os.path.basename(autoexecfp)
+def add_to_autoexec(s):
+    autoexecfn = os.path.basename("autoexec.cfg")
+    autoexecfp = os.path.join(cs_cfg_dir, autoexecfn)
 
     if not os.path.isfile(autoexecfp):
         log.debug(f"autoexec file doesn't exist. Creating it. ({autoexecfp})")
@@ -193,7 +146,7 @@ class ConsoleVisibility(object):
         self.win = GetConsoleWindow()
 
 
-    def toggle_hide(self, systray=None):
+    def toggle_hide(self):
         self.visible = not self.visible
         ShowWindow(self.win, self.visible)
 
@@ -210,8 +163,7 @@ class ConsoleVisibility(object):
 convis = ConsoleVisibility()
 
 def tray_icon():
-    menu = (("Show/Hide", None, convis.toggle_hide),)
+    menu = (("Show/Hide", None, lambda x: convis.toggle_hide()),)
     iconfp = os.path.join(data_dir, "icon.ico")
     systray = SysTrayIcon(iconfp, appname, menu, default_menu_index=0)
     return systray
-

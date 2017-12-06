@@ -8,7 +8,7 @@ import os
 from textwrap import dedent
 from http import HTTPStatus
 import logging
-from subprocess import Popen, call
+from subprocess import call
 import re
 
 from flask import Flask, request
@@ -33,8 +33,7 @@ log.info(f"{appname} - version {__version__}")
 
 from utils import (active_window_title, list_open_windows, cs_bind_autoit_map,
                    cs_cfg_dir, our_cfg_fp, execsnippet, existing_binds,
-                   prettylist, launch_options,autoexec_filename, steam_dir,
-                   set_launch_options, add_to_autoexec, tray_icon, convis)
+                   prettylist, add_to_autoexec, tray_icon)
 import config
 port = config.data["gsi_port"]
 cs_bind = config.data["cs_bind"]
@@ -272,45 +271,7 @@ def ensure_bind_bound():
     elif not _existing_binds:
         log.debug(f"Couldn't find {bindsnippet} in config.cfg")
 
-    launchstr = launch_options()
-    autoexecfn = autoexec_filename(launchstr)
-
-    # They could also add launch options and write an autoexec file
-    #  themselves - but that's a bit longwinded to explain?
-    failecho = lambda: secho(
-        f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
-        "...into your CSGO console.\n",
-        fg="red")
-
-    if not autoexecfn:
-        log.debug("Couldn't find any autoexec in launch options.")
-        secho(
-            "Steam needs to be closed in order to update the CSGO launch "
-            "options. Killing it will also close any games you have running.",
-            fg="red")
-        if not confirm("Kill Steam.exe? [y/n]", show_default=False):
-            log.debug("User decided not to kill Steam to "
-                      "update launch options.")
-            failecho()
-            pause()
-            restart()
-            return
-
-        autoexecfn = "autoexec.cfg"
-        log.debug("Steam needs to be closed to update launch options. "
-                  "Killing it AND ITS CHILDREN")
-        call("taskkill /f /t /im steam.exe") # asking nicely just minimises steam to tray so /f is required.
-
-        execs = f" -exec {autoexecfn}"
-        launchstr += execs
-        set_launch_options(launchstr)
-        log.debug(f"Added '{execs}' to launch options.")
-
-        log.debug("Opening Steam.")
-        steam_exe_fp = os.path.join(steam_dir, "Steam.exe")
-        Popen(steam_exe_fp)
-        log.debug(f"Opened Steam. ({steam_exe_fp})")
-
+    autoexecfn = "autoexec.cfg"
     autoexecfp = os.path.join(cs_cfg_dir, autoexecfn)
     foundbind = False
     log.debug(f"Checking if bind is in {autoexecfn}")
@@ -332,7 +293,10 @@ def ensure_bind_bound():
                         log.debug(f"{autoexecfn} already contains '{fullbind}'")
                         if game_name in list_open_windows():
                             log.debug("Game is already open.")
-                            failecho()
+                            secho(
+                                f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
+                                "...into your CSGO console.\n",
+                                fg="red")
                             pause()
                             restart()
                         else:
@@ -345,7 +309,7 @@ def ensure_bind_bound():
                   "doesn't exist.")
 
     if not foundbind:
-        add_to_autoexec(bindsnippet, autoexecfp)
+        add_to_autoexec(bindsnippet)
 
 
 def gen_GSI_cfg():
