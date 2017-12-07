@@ -13,3 +13,4 @@ untracked
 *.egg-info
 __pycache__/
 env/
+*.lprof
