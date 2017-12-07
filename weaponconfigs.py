@@ -18,7 +18,6 @@ import click
 from click import echo, secho, confirm
 import autoit
 import appdirs
-import vdf
 
 from log import logger_setup, handle_exception
 from __init__ import appname
@@ -35,8 +34,7 @@ log.debug("Start.")
 from utils import (active_window_title, list_open_windows, used_binds,
                    unused_binds, cs_bind_autoit_map, cs_cfg_dir, our_cfg_fp,
                    execsnippet, existing_binds, prettylist, launch_options,
-                   autoexec_filename, localconfig_data, localconfig_fp,
-                   steam_dir)
+                   autoexec_filename, steam_dir, set_launch_options)
 import config
 #from config import log_dir
 port = config.data["gsi_port"]
@@ -284,11 +282,8 @@ def ensure_bind_bound():
         call("taskkill /f /t /im steam.exe") # asking nicely just minimises steam to tray so /f is required.
 
         execs = f" -exec {autoexecfn}"
-        data = localconfig_data()
-        data["UserLocalConfigStore"]["Software"]["Valve"] \
-            ["Steam"]["Apps"]["730"]["LaunchOptions"] += execs
-        with open(localconfig_fp(), "w", encoding="utf8") as f:
-            vdf.dump(data, f, pretty=True)
+        launchstr += execs
+        set_launch_options(launchstr)
         log.debug(f"Added '{execs}' to launch options.")
 
         log.debug("Opening Steam.")
