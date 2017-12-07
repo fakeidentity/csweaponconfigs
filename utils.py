@@ -3,12 +3,12 @@ import os
 import glob
 import re
 from fileinput import FileInput
-from subprocess import Popen, call
+#from subprocess import Popen, call
 
 from win32gui import (GetWindowText, GetForegroundWindow, EnumWindows,
                       IsWindowVisible)
 import vdf
-from click import secho, confirm
+#from click import secho, confirm
 
 from log import getLogger, modulename
 
@@ -178,107 +178,107 @@ def add_to_autoexec(s, autoexecfp=None):
                   end="")
 
 
-def ensure_bind_bound():
-    # TODO make this not a big convoluted mega function...
-    # why is this in utils anyway? coz SHUTUP, IS WHY
-    configkey = config.data["cs_bind"]
-    bindsnippet = f'bind {configkey} "{execsnippet}"'
-    log.debug("Ensuring either config.cfg or autoexec cfg contains "
-              f"'{bindsnippet}'")
+#def ensure_bind_bound():
+    ## TODO make this not a big convoluted mega function...
+    ## why is this in utils anyway? coz SHUTUP, IS WHY
+    #configkey = config.data["cs_bind"]
+    #bindsnippet = f'bind {configkey} "{execsnippet}"'
+    #log.debug("Ensuring either config.cfg or autoexec cfg contains "
+              #f"'{bindsnippet}'")
 
-    _existing_binds = existing_binds()
-    if configkey in _existing_binds:
-        log.debug("config.cfg already contains the right bind.")
-        # Could let user optionally continue to create autoexec here
-        #  even though it's not necessary?
-        return
-    elif _existing_binds and configkey not in _existing_binds:
-        # Shouldn't happen unless user has customised cs_bind themself.
-        existing_binds_s = prettylist(_existing_binds, "and", pre="", post="")
-        if len(_existing_binds) > 1:
-            isare = "are"
-        else:
-            isare = "is"
-        secho(f"{existing_binds_s} {isare} already bound to exec our config..."
-              f"\n...but you have cs_bind set to {configkey} for some reason.",
-              fg="yellow")
-        existing_binds_s = prettylist(_existing_binds, "or", pre="", post="")
-        secho(f"Consider changing cs_bind to {existing_binds_s} in "
-              f"{config.config_path}", fg="yellow")
-        for existing_bind in _existing_binds:
-            if confirm(f"Change cs_bind to {existing_bind}?", default=True):
-                config.data["cs_bind"] = existing_bind
-                config.generate_config()
-                log.debug("Restarting script.")
-                call(sys.executable + " " + " ".join(sys.argv))
-                sys.exit(0)
-    elif not _existing_binds:
-        log.debug(f"Couldn't find {bindsnippet} in config.cfg")
+    #_existing_binds = existing_binds()
+    #if configkey in _existing_binds:
+        #log.debug("config.cfg already contains the right bind.")
+        ## Could let user optionally continue to create autoexec here
+        ##  even though it's not necessary?
+        #return
+    #elif _existing_binds and configkey not in _existing_binds:
+        ## Shouldn't happen unless user has customised cs_bind themself.
+        #existing_binds_s = prettylist(_existing_binds, "and", pre="", post="")
+        #if len(_existing_binds) > 1:
+            #isare = "are"
+        #else:
+            #isare = "is"
+        #secho(f"{existing_binds_s} {isare} already bound to exec our config..."
+              #f"\n...but you have cs_bind set to {configkey} for some reason.",
+              #fg="yellow")
+        #existing_binds_s = prettylist(_existing_binds, "or", pre="", post="")
+        #secho(f"Consider changing cs_bind to {existing_binds_s} in "
+              #f"{config.config_path}", fg="yellow")
+        #for existing_bind in _existing_binds:
+            #if confirm(f"Change cs_bind to {existing_bind}?", default=True):
+                #config.data["cs_bind"] = existing_bind
+                #config.generate_config()
+                #log.debug("Restarting script.")
+                #call(sys.executable + " " + " ".join(sys.argv))
+                #sys.exit(0)
+    #elif not _existing_binds:
+        #log.debug(f"Couldn't find {bindsnippet} in config.cfg")
 
-    launchstr = launch_options()
-    autoexecfn = autoexec_filename(launchstr)
+    #launchstr = launch_options()
+    #autoexecfn = autoexec_filename(launchstr)
 
-    if not autoexecfn:
-        log.debug("Couldn't find any autoexec in launch options.")
-        secho(
-            "Steam needs to be closed in order to update the CSGO launch "
-            "options. Killing it will also close any games you have running.",
-            fg="red")
-        if not confirm("Kill Steam.exe? [y/n]", show_default=False):
-            log.debug("User decided not to kill Steam.")
-            # They could also add launch options and write an autoexec file
-            #  themselves - but that's a bit longwinded to explain?.
-            secho(
-                f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
-                "...into your CSGO console.\n",
-                fg="red")
-            sys.exit(1)
-            return
+    #if not autoexecfn:
+        #log.debug("Couldn't find any autoexec in launch options.")
+        #secho(
+            #"Steam needs to be closed in order to update the CSGO launch "
+            #"options. Killing it will also close any games you have running.",
+            #fg="red")
+        #if not confirm("Kill Steam.exe? [y/n]", show_default=False):
+            #log.debug("User decided not to kill Steam.")
+            ## They could also add launch options and write an autoexec file
+            ##  themselves - but that's a bit longwinded to explain?.
+            #secho(
+                #f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
+                #"...into your CSGO console.\n",
+                #fg="red")
+            #sys.exit(1)
+            #return
 
-        autoexecfn = "autoexec.cfg"
-        log.debug("Steam needs to be closed to update launch options. "
-                  "Killing it AND ITS CHILDREN")
-        os.system("taskkill /f /t /im steam.exe") # asking nicely just minimises steam to tray so /f is required.
+        #autoexecfn = "autoexec.cfg"
+        #log.debug("Steam needs to be closed to update launch options. "
+                  #"Killing it AND ITS CHILDREN")
+        #os.system("taskkill /f /t /im steam.exe") # asking nicely just minimises steam to tray so /f is required.
 
-        execs = f" -exec {autoexecfn}"
-        data = localconfig_data()
-        data["UserLocalConfigStore"]["Software"]["Valve"] \
-            ["Steam"]["Apps"]["730"]["LaunchOptions"] += execs
-        with open(localconfig_fp(), "w", encoding="utf8") as f:
-            vdf.dump(data, f, pretty=True)
-        log.debug(f"Added '{execs}' to launch options.")
+        #execs = f" -exec {autoexecfn}"
+        #data = localconfig_data()
+        #data["UserLocalConfigStore"]["Software"]["Valve"] \
+            #["Steam"]["Apps"]["730"]["LaunchOptions"] += execs
+        #with open(localconfig_fp(), "w", encoding="utf8") as f:
+            #vdf.dump(data, f, pretty=True)
+        #log.debug(f"Added '{execs}' to launch options.")
 
-        log.debug("Opening Steam.")
-        steam_exe_fp = os.path.join(steam_dir, "Steam.exe")
-        Popen(steam_exe_fp)
-        log.debug(f"Opened Steam. ({steam_exe_fp})")
+        #log.debug("Opening Steam.")
+        #steam_exe_fp = os.path.join(steam_dir, "Steam.exe")
+        #Popen(steam_exe_fp)
+        #log.debug(f"Opened Steam. ({steam_exe_fp})")
 
-    autoexecfp = os.path.join(cs_cfg_dir, autoexecfn)
-    foundbind = False
-    log.debug(f"Checking if bind is in {autoexecfn}")
-    # yes this is a thing of beauty. you are right to stare.
-    pattern = (f"^(?!.*?//).*?(?:(?:^|;)[ \t]*)(bind[ \t]+\"?(.+?)\"?[ \t]+\"({execsnippet}(?:.cfg)?)\"(?:[ \t]*(?:$|;)))")
-    try:
-        with open(autoexecfp, "r", encoding="utf8") as f:
-            for line in f:
-                match = re.search(pattern, line)
-                if match:
-                    fullbind = match.group(1)
-                    bindkey = match.group(2)
-                    bindval = match.group(3)
-                    if bindkey != configkey:
-                        log.debug(f"Found '{fullbind}' in {autoexecfn} - "
-                                  "but that won't work because "
-                                  f"cs_bind is set to {configkey}")
-                    else:
-                        log.debug(f"{autoexecfn} already contains '{fullbind}'")
-                        foundbind = True
-    except FileNotFoundError:
-        log.debug(f"Can't find bind in autoexec because {autoexecfn} "
-                  "doesn't exist.")
+    #autoexecfp = os.path.join(cs_cfg_dir, autoexecfn)
+    #foundbind = False
+    #log.debug(f"Checking if bind is in {autoexecfn}")
+    ## yes this is a thing of beauty. you are right to stare.
+    #pattern = (f"^(?!.*?//).*?(?:(?:^|;)[ \t]*)(bind[ \t]+\"?(.+?)\"?[ \t]+\"({execsnippet}(?:.cfg)?)\"(?:[ \t]*(?:$|;)))")
+    #try:
+        #with open(autoexecfp, "r", encoding="utf8") as f:
+            #for line in f:
+                #match = re.search(pattern, line)
+                #if match:
+                    #fullbind = match.group(1)
+                    #bindkey = match.group(2)
+                    #bindval = match.group(3)
+                    #if bindkey != configkey:
+                        #log.debug(f"Found '{fullbind}' in {autoexecfn} - "
+                                  #"but that won't work because "
+                                  #f"cs_bind is set to {configkey}")
+                    #else:
+                        #log.debug(f"{autoexecfn} already contains '{fullbind}'")
+                        #foundbind = True
+    #except FileNotFoundError:
+        #log.debug(f"Can't find bind in autoexec because {autoexecfn} "
+                  #"doesn't exist.")
 
-    if not foundbind:
-        add_to_autoexec(bindsnippet, autoexecfp)
+    #if not foundbind:
+        #add_to_autoexec(bindsnippet, autoexecfp)
 
 
 import config # TODO resolve this circular import some other way
