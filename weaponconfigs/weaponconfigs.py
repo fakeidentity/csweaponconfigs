@@ -70,12 +70,21 @@ class GSIPayloadHandler(object):
         // This file is overwritten every time you change weapon. Don't bother editing it.
         {%- if wep_slot != last_wep_slot %}
         exec {{wep_slot}} // weapon slot (slot1–slot10)
+        {%- if last_wep_slot %}
+        exec undo_{{last_wep_slot}} // previous weapon slot
+        {%- endif %}
         {%- endif %}
         {%- if wep_type and wep_type != last_wep_type %}
         exec {{wep_type}} // weapon type ("pistol", "rifle", "submachinegun", "sniperrifle", "machinegun", "shotgun", "c4", "knife", "grenade")
+        {%- if last_wep_type %}
+        exec undo_{{last_wep_type}} // previous weapon type
+        {%- endif %}
         {%- endif %}
         {%- if wep_type != wep_name %}
         exec {{wep_name}} // weapon name (without "weapon_" prefix)
+        {%- endif %}
+        {%- if last_wep_name and wep_name != last_wep_name %}
+        exec undo_{{last_wep_name}} // previous weapon name
         {%- endif %}
         {{id_line}}
         """).strip())
@@ -124,8 +133,6 @@ class GSIPayloadHandler(object):
 
             if self.active_wep_name == self.last_wep_name:
                 return
-            else:
-                self.last_wep_name = self.active_wep_name
 
             log.info(f"{self.active_wep_name} is active.")
 
@@ -157,6 +164,7 @@ class GSIPayloadHandler(object):
 
             self.last_wep_slot = self.active_wep_slot
             self.last_wep_type = self.active_wep_type
+            self.last_wep_name = self.active_wep_name
 
             if activity == "playing":
                 self.press_bind()
@@ -183,6 +191,7 @@ class GSIPayloadHandler(object):
                                      last_wep_type = self.last_wep_type,
                                      wep_type = self.active_wep_type,
                                      wep_name = self.active_wep_name,
+                                     last_wep_name = self.last_wep_name,
                                      id_line = self.id_line)
         log.debug(s)
         return s
