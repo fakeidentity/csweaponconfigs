@@ -433,30 +433,14 @@ def main(debug=False):
 @click.command()
 @click.option("--debug", is_flag=True,
               help=("Show debug messages"))
-@click.option("--profile", is_flag=True,
-              help=("Profile code. You don't want this."))
-def cli(debug, profile):
+def cli(debug):
     """
     Automatically execute different CSGO cfg files depending on
     what weapon you have out.
     \n
     Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
     """
-    if not profile:
-        main(debug)
-    else:
-        import cProfile, pstats
-
-        profiler = cProfile.Profile()
-        profiler.runcall(main, debug)
-
-        stats = pstats.Stats(profiler)
-        stats.strip_dirs()
-        stats.sort_stats('cumulative', 'calls')
-        stats.print_stats(20)
-        stats.sort_stats('time', 'calls')
-        stats.print_stats(10)
-
+    main(debug)
 
 
 if __name__ == "__main__":
