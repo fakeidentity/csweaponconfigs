@@ -21,6 +21,12 @@ import appdirs
 from colorama import Fore
 from win32console import SetConsoleTitle
 
+if __name__ == "__main__":
+    import inspect
+    current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    parent_dir = os.path.dirname(current_dir)
+    sys.path.insert(0, parent_dir)
+
 from weaponconfigs.log import logger_setup, handle_exception
 from weaponconfigs.__init__ import appname, __version__, appurl, data_dir
 
@@ -430,3 +436,7 @@ def cli(debug):
 
 def debug():
     main(debug=True)
+
+
+if __name__ == "__main__":
+    debug()

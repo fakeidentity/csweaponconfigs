@@ -1,9 +1,8 @@
 Flask>=0.12.2
 pyautoit>=0.4
-win32gui
+pypiwin32>=220
 port-for>=0.4
 click>=6.7
 colorama>=0.3.9
 appdirs>=1.4.3
 infi.systray>=0.1.10
-win32console
