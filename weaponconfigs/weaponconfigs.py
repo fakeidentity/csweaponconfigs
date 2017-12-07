@@ -36,7 +36,6 @@ from utils import (active_window_title, list_open_windows, used_binds,
                    execsnippet, existing_binds, prettylist, launch_options,
                    autoexec_filename, steam_dir, set_launch_options)
 import config
-#from config import log_dir
 port = config.data["gsi_port"]
 cs_bind = config.data["cs_bind"]
 

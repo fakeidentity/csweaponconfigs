@@ -15,15 +15,9 @@ from __init__ import appname
 log = getLogger(modulename())
 log.debug("Helo its me ur config")
 
-
-#appname = os.path.basename(os.path.dirname(__file__))
-#current_dir = os.path.dirname(os.path.realpath(__file__))
-#config_dir = current_dir
 config_dir = appdirs.user_config_dir(appname, False)
-
 configfn = f"{appname}.ini"
 config_path = os.path.join(config_dir, configfn)
-#log_dir = appdirs.user_log_dir(appname, False)
 
 # Default values
 
@@ -45,7 +39,6 @@ def default_gsi_port():
 def default_bind():
     log.debug("Picking a default bind")
     binds = bind_data()
-    #lookfor = "exec {}".format(our_cfg_fn.strip(".cfg"))
     lookfor = "exec {}".format(our_cfg_fn.rpartition(".")[0])
     try:
         existing_bind = next(k for k, v in binds.items() \
@@ -108,7 +101,6 @@ def generate_config(configdata=None):
                          "unused, and likely to stay unused. "
                          "You shouldn't need to change it."))
     config.set(appname, "gsi_port", str(configdata["gsi_port"]))
-
 
     write_cfg(config)
     _old_data = configdata.copy()

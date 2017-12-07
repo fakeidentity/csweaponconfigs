@@ -108,6 +108,14 @@ def launch_options():
                         ["Steam"]["Apps"]["730"]["LaunchOptions"]
 
 
+def set_launch_options(s):
+    data = localconfig_data()
+    data["UserLocalConfigStore"]["Software"]["Valve"] \
+        ["Steam"]["Apps"]["730"]["LaunchOptions"] = s
+    with open(localconfig_fp(), "w", encoding="utf8") as f:
+        vdf.dump(data, f, pretty=True)
+
+
 def autoexec_filename(launchstr=""):
     log.debug("Determining autoexec filenames from CSGO launch options.")
     if not launchstr:
