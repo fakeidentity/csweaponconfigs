@@ -9,8 +9,8 @@ from infi.systray import SysTrayIcon
 from win32console import GetConsoleWindow
 import win32con
 
-from log import getLogger, modulename
-from __init__ import appname, data_dir
+from weaponconfigs.log import getLogger, modulename
+from weaponconfigs.__init__ import appname, data_dir
 
 log = getLogger(modulename())
 

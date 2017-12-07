@@ -8,9 +8,9 @@ from logging import getLogger
 import port_for
 import appdirs
 
-from log import modulename
-from utils import bind_data, unused_binds, our_cfg_fn
-from __init__ import appname
+from weaponconfigs.log import modulename
+from weaponconfigs.utils import bind_data, unused_binds, our_cfg_fn
+from weaponconfigs.__init__ import appname
 
 log = getLogger(modulename())
 log.debug("Helo its me ur config")

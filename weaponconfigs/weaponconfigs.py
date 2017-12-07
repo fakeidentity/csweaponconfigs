@@ -21,8 +21,8 @@ import appdirs
 from colorama import Fore
 from win32console import SetConsoleTitle
 
-from log import logger_setup, handle_exception
-from __init__ import appname, __version__, appurl, data_dir
+from weaponconfigs.log import logger_setup, handle_exception
+from weaponconfigs.__init__ import appname, __version__, appurl, data_dir
 
 log_dir = appdirs.user_log_dir(appname, False)
 log = logger_setup(log_dir, __file__)
@@ -31,10 +31,11 @@ sys.excepthook = uncaught_exception_handler
 
 log.info(f"{appname} - version {__version__}")
 
-from utils import (active_window_title, list_open_windows, cs_bind_autoit_map,
-                   cs_cfg_dir, our_cfg_fp, execsnippet, existing_binds,
-                   prettylist, add_to_autoexec, tray_icon)
-import config
+from weaponconfigs.utils import (active_window_title, list_open_windows,
+                                 cs_bind_autoit_map, cs_cfg_dir, our_cfg_fp,
+                                 execsnippet, existing_binds, prettylist,
+                                 add_to_autoexec, tray_icon)
+import weaponconfigs.config as config
 port = config.data["gsi_port"]
 cs_bind = config.data["cs_bind"]
 
@@ -292,6 +293,8 @@ def ensure_bind_bound():
                     else:
                         log.debug(f"{autoexecfn} already contains '{fullbind}'")
                         if game_name in list_open_windows():
+                            # autoexec is right but the game is open
+                            # and config.cfg isn't right
                             log.debug("Game is already open.")
                             secho(
                                 f"You need to enter...\n{bindsnippet}; host_writeconfig\n"
@@ -372,16 +375,7 @@ def before_first_req():
     log.debug("Recieved our first request")
 
 
-@click.command()
-@click.option("--debug", is_flag=True,
-              help=("Show debug messages"))
-def cli(debug):
-    """
-    Automatically execute different CSGO cfg files depending on
-    what weapon you have out.
-    \n
-    Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
-    """
+def main(debug):
     SetConsoleTitle(appname)
 
     for loghandler in log.handlers:
@@ -421,5 +415,18 @@ def cli(debug):
         systray.shutdown()
 
 
-if __name__ == "__main__":
-    cli()
+@click.command()
+@click.option("--debug", is_flag=True,
+              help=("Show debug messages"))
+def cli(debug):
+    """
+    Automatically execute different CSGO cfg files depending on
+    what weapon you have out.
+    \n
+    Example use: Have different crosshairs set up in slot1.cfg and slot2.cfg
+    """
+    main(debug)
+
+
+def debug():
+    main(debug=True)
