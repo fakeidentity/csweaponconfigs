@@ -2,6 +2,7 @@ import os
 import glob
 import re
 from fileinput import FileInput
+from collections import defaultdict
 
 from win32gui import (GetWindowText, GetForegroundWindow, EnumWindows,
                       IsWindowVisible, ShowWindow)
@@ -9,8 +10,8 @@ from infi.systray import SysTrayIcon
 from win32console import GetConsoleWindow
 import win32con
 
-from log import getLogger, modulename
-from __init__ import appname, data_dir
+from weaponconfigs.log import getLogger, modulename
+from weaponconfigs.__init__ import appname, data_dir
 
 log = getLogger(modulename())
 
@@ -59,7 +60,6 @@ def bind_data(current_only=False):
     userdata_glob = r"%PROGRAMFILES(x86)%\Steam\userdata\*\730\local\cfg\*.cfg"
     userdata_cfgs = glob.glob(os.path.expandvars(userdata_glob))
     userdata_cfgs = sorted(userdata_cfgs, key=os.path.getmtime, reverse=True)
-    from collections import defaultdict
     binds = defaultdict(list)
     bindpattern = re.compile(r"bind \"(.+?)\" \"(.+?)\"")
     for fp in userdata_cfgs:
