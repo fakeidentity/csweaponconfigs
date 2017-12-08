@@ -54,10 +54,11 @@ cs_bind_autoit_map = {
 cs_bindnames = {k.upper() for k in cs_bind_autoit_map.keys()}
 
 
-def bind_data():
+def bind_data(current_only=False):
     log.debug("Looking up bind data.")
     userdata_glob = r"%PROGRAMFILES(x86)%\Steam\userdata\*\730\local\cfg\*.cfg"
     userdata_cfgs = glob.glob(os.path.expandvars(userdata_glob))
+    userdata_cfgs = sorted(userdata_cfgs, key=os.path.getmtime, reverse=True)
     from collections import defaultdict
     binds = defaultdict(list)
     bindpattern = re.compile(r"bind \"(.+?)\" \"(.+?)\"")
@@ -71,6 +72,8 @@ def bind_data():
                     if keyname in binds and binds[keyname][0] == bindval:
                         continue
                     binds[keyname].append(bindval)
+                if current_only:
+                    break
     return binds
 
 
@@ -86,14 +89,15 @@ def unused_binds(data=None):
     return cs_bindnames.difference(used_binds(data))
 
 
-def existing_binds(binddata=None):
+def existing_binds(binddata=None, *args, **kwargs):
     if not binddata:
-        binddata = bind_data()
+        binddata = bind_data(*args, **kwargs)
     binds = [k for k, v in binddata.items() if execsnippet in v]
     if binds:
         for key in binds:
             log.debug(f"{key} is already bound to '{execsnippet}'.")
         return binds
+    return []
 
 
 def prettylist(list_, conjunc, pre="'", post="'"):

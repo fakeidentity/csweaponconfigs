@@ -244,7 +244,7 @@ def ensure_bind_bound():
     log.debug("Ensuring either config.cfg or autoexec cfg contains "
               f"'{bindsnippet}'")
 
-    _existing_binds = existing_binds()
+    _existing_binds = existing_binds(current_only=True)
     if configkey in _existing_binds:
         log.debug("config.cfg already contains the right bind.")
         # Could let user optionally continue to create autoexec here
