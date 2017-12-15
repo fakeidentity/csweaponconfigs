@@ -72,8 +72,8 @@ def bind_data(current_only=False):
                     if keyname in binds and binds[keyname][0] == bindval:
                         continue
                     binds[keyname].append(bindval)
-                if current_only:
-                    break
+            if current_only:
+                break
     return binds
 
 
